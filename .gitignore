@@ -147,3 +147,13 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# ===========================
+# Proyecto - Entradas extra
+# ===========================
+
+# Docker volumes
+postgres_data/
+
+# Frontend build output
+frontend/dist/

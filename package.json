@@ -1,0 +1,17 @@
+{
+  "name": "sistema-matricula",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema de matrícula - Monorepo (Backend + Frontend)",
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build": "pnpm --filter frontend build",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
+
