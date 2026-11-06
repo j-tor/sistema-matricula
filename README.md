@@ -1,235 +1,55 @@
-#  Sistema de Matrícula
+﻿# Sistema de Matrícula
 
-Sistema web integral para la gestión y control de matrículas académicas.
+Monorepo con pnpm workspaces: React 18, Vite 6 y Material UI en el frontend; NestJS 11, TypeScript y Sequelize en el backend; PostgreSQL 16 con Docker Compose.
 
-Este repositorio está estructurado como un **monorepo** gestionado con `pnpm workspaces`, integrando backend, frontend y base de datos contenerizada.
+## Requisitos e inicio
 
----
+Instala Node.js 20 o superior, pnpm 9 o superior y Docker Desktop. Desde la raíz:
 
-##  Tecnologías
-
-- **Frontend:** React 18, Vite 6, Material UI (MUI v9), React Router DOM, Axios
-- **Backend:** Node.js, Express 4, Sequelize ORM
-- **Base de Datos:** PostgreSQL 16 (orquestada mediante Docker Compose)
-- **Gestor de Paquetes:** `pnpm` (modo workspaces)
-
----
-
-##  Requisitos previos
-
-Asegúrate de contar con lo siguiente instalado en tu entorno local:
-
-- **[Node.js](https://nodejs.org/)** (v20 o superior recomendada)
-- **[pnpm](https://pnpm.io/)** (v9 o superior)
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (activo para la base de datos)
-
----
-
-##  Guía de inicio rápido
-
-### 1. Clonar el repositorio y ubicarse en la raíz
-
-```bash
-git clone <URL_DEL_REPOSITORIO>
-cd sistema-matricula
-```
-
-### 2. Instalar las dependencias de todo el monorepo
-
-```bash
-pnpm install
-```
-
-### 3. Configurar las variables de entorno
-
-Copia las plantillas `.env.example` en sus respectivos proyectos:
-
-**En Linux / macOS / Git Bash:**
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-```
-
-**En Windows (PowerShell):**
 ```powershell
+pnpm install
 Copy-Item backend/.env.example backend/.env
 Copy-Item frontend/.env.example frontend/.env
-```
-
-*(Los valores por defecto ya están configurados para el entorno local).*
-
-### 4. Iniciar la base de datos con Docker
-
-Inicia el contenedor de PostgreSQL en segundo plano:
-
-```bash
 docker compose up -d
-```
-
-Para verificar que el contenedor esté corriendo:
-
-```bash
-docker compose ps
-```
-
-### 5. Iniciar la aplicación en modo desarrollo
-
-Puedes ejecutar ambos servicios (backend y frontend) de forma simultánea con un solo comando:
-
-```bash
 pnpm dev
 ```
 
----
+Copia las plantillas solamente en la primera configuración; conserva tus archivos `.env` existentes.
 
-##  URLs y Puertos de Desarrollo
+| Servicio | Dirección |
+| --- | --- |
+| Frontend | http://localhost:5174 |
+| API | http://localhost:3005/api |
+| Estado de servidor y conexión a BD | http://localhost:3005/health |
+| PostgreSQL | localhost:5434 |
 
-| Servicio | URL / Host | Descripción |
-| :--- | :--- | :--- |
-| **Frontend** | [http://localhost:5174](http://localhost:5174) | SPA React con Material UI |
-| **Backend API** | [http://localhost:3005](http://localhost:3005) | Servidor API REST Express |
-| **Health Check** | [http://localhost:3005/health](http://localhost:3005/health) | Estado del servidor y conexión a BD |
-| **PostgreSQL** | `localhost:5434` | Base de datos (`sistema_matricula`) |
+Vite redirige `/api` y `/health` al backend. Las variables `PORT` y `FRONTEND_URL` configuran el puerto de la API y el origen permitido por CORS.
 
->  **Nota sobre el proxy:** En desarrollo, el frontend incluye un proxy en Vite que redirige automáticamente cualquier petición `/api` o `/health` hacia el puerto `3005` del backend.
+## Comandos
 
----
+| Comando | Función |
+| --- | --- |
+| `pnpm dev` | Backend y frontend con recarga automática |
+| `pnpm dev:backend` | NestJS en modo watch |
+| `pnpm dev:frontend` | Vite en desarrollo |
+| `pnpm build` | Compila backend y frontend en sus carpetas `dist` |
+| `pnpm --filter backend start` | Ejecuta el backend compilado |
+| `pnpm --filter backend typecheck` | Comprueba los tipos del backend |
+| `pnpm test` | Compila y prueba las rutas HTTP del backend |
 
-##  Comandos disponibles
+Las pruebas HTTP simulan la conexión de base de datos. Para verificar la conexión real, inicia PostgreSQL y consulta `/health`.
 
-Desde la raíz del proyecto:
+## Backend NestJS
 
-| Comando | Descripción |
-| :--- | :--- |
-| `pnpm dev` | Inicia backend y frontend en paralelo con recarga en caliente |
-| `pnpm dev:backend` | Inicia únicamente el servidor backend (`nodemon`) |
-| `pnpm dev:frontend` | Inicia únicamente el servidor de desarrollo de Vite |
-| `pnpm build` | Genera el build de producción del frontend (`frontend/dist/`) |
-| `pnpm lint` | Ejecuta el linter en todos los paquetes del workspace |
-| `docker compose up -d` | Levanta el contenedor de PostgreSQL |
-| `docker compose down` | Detiene el contenedor de base de datos |
-| `docker compose down -v` | Detiene el contenedor y elimina el volumen de datos |
+- `src/main.ts`: arranque, CORS y cierre de recursos.
+- `src/app.module.ts`: módulo raíz.
+- `src/app.controller.ts`: ruta `GET /api`.
+- `src/database/`: servicio Sequelize inyectable, con cierre de conexiones al detener la aplicación.
+- `src/health/`: ruta `GET /health`, responde 200 con BD conectada y 500 si falla.
+- `test/`: pruebas HTTP.
 
----
+Agrega las nuevas funciones como módulos NestJS con controladores y servicios. Importa `DatabaseModule` para inyectar `DatabaseService` y acceder a `sequelize`. El arranque no modifica tablas ni sincroniza esquemas automáticamente. Las rutas desconocidas usan la respuesta 404 estándar de NestJS.
 
-##  Flujo de trabajo y contribución
+Referencia: [documentación de NestJS 11](https://docs.nestjs.com/v11/first-steps).
 
-Para mantener el orden del repositorio, consulta las reglas del equipo en:
-👉 [Guía de Flujo de Trabajo (Issues, Branches y Pull Requests)](./flujo-de-trabajo.md)
-
-Sistema web integral para la gestión y control de matrículas académicas.
-
-Este repositorio está estructurado como un **monorepo** gestionado con `pnpm workspaces`, integrando backend, frontend y base de datos contenerizada.
-
----
-
-## 🛠️ Tecnologías
-
-- **Frontend:** React 18, Vite 6, Material UI (MUI v9), React Router DOM, Axios
-- **Backend:** Node.js, Express 4, Sequelize ORM
-- **Base de Datos:** PostgreSQL 16 (orquestada mediante Docker Compose)
-- **Gestor de Paquetes:** `pnpm` (modo workspaces)
-
----
-
-## 📋 Requisitos previos
-
-Asegúrate de contar con lo siguiente instalado en tu entorno local:
-
-- **[Node.js](https://nodejs.org/)** (v20 o superior recomendada)
-- **[pnpm](https://pnpm.io/)** (v9 o superior)
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (activo para la base de datos)
-
----
-
-## 🚀 Guía de inicio rápido
-
-### 1. Clonar el repositorio y ubicarse en la raíz
-
-```bash
-git clone <URL_DEL_REPOSITORIO>
-cd sistema-matricula
-```
-
-### 2. Instalar las dependencias de todo el monorepo
-
-```bash
-pnpm install
-```
-
-### 3. Configurar las variables de entorno
-
-Copia las plantillas `.env.example` en sus respectivos proyectos:
-
-**En Linux / macOS / Git Bash:**
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-```
-
-**En Windows (PowerShell):**
-```powershell
-Copy-Item backend/.env.example backend/.env
-Copy-Item frontend/.env.example frontend/.env
-```
-
-*(Los valores por defecto ya están configurados para el entorno local).*
-
-### 4. Iniciar la base de datos con Docker
-
-Inicia el contenedor de PostgreSQL en segundo plano:
-
-```bash
-docker compose up -d
-```
-
-Para verificar que el contenedor esté corriendo:
-
-```bash
-docker compose ps
-```
-
-### 5. Iniciar la aplicación en modo desarrollo
-
-Puedes ejecutar ambos servicios (backend y frontend) de forma simultánea con un solo comando:
-
-```bash
-pnpm dev
-```
-
----
-
-## 🌐 URLs y Puertos de Desarrollo
-
-| Servicio | URL / Host | Descripción |
-| :--- | :--- | :--- |
-| **Frontend** | [http://localhost:5174](http://localhost:5174) | SPA React con Material UI |
-| **Backend API** | [http://localhost:3005](http://localhost:3005) | Servidor API REST Express |
-| **Health Check** | [http://localhost:3005/health](http://localhost:3005/health) | Estado del servidor y conexión a BD |
-| **PostgreSQL** | `localhost:5434` | Base de datos (`sistema_matricula`) |
-
-> 💡 **Nota sobre el proxy:** En desarrollo, el frontend incluye un proxy en Vite que redirige automáticamente cualquier petición `/api` o `/health` hacia el puerto `3005` del backend.
-
----
-
-## 📜 Comandos disponibles
-
-Desde la raíz del proyecto:
-
-| Comando | Descripción |
-| :--- | :--- |
-| `pnpm dev` | Inicia backend y frontend en paralelo con recarga en caliente |
-| `pnpm dev:backend` | Inicia únicamente el servidor backend (`nodemon`) |
-| `pnpm dev:frontend` | Inicia únicamente el servidor de desarrollo de Vite |
-| `pnpm build` | Genera el build de producción del frontend (`frontend/dist/`) |
-| `pnpm lint` | Ejecuta el linter en todos los paquetes del workspace |
-| `docker compose up -d` | Levanta el contenedor de PostgreSQL |
-| `docker compose down` | Detiene el contenedor de base de datos |
-| `docker compose down -v` | Detiene el contenedor y elimina el volumen de datos |
-
----
-
-## 🤝 Flujo de trabajo y contribución
-
-Para mantener el orden del repositorio, consulta las reglas del equipo en:
-👉 [Guía de Flujo de Trabajo (Issues, Branches y Pull Requests)](./flujo-de-trabajo.md)
+Consulta la [guía de flujo de trabajo](docs/flujo-de-trabajo.md).
