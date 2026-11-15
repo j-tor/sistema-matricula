@@ -1,5 +1,3 @@
-
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,472 +5,200 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["auth", "matricula"]
 }
 
-// ENUMS
-enum ROL_USUARIO {
-  CUIDADOR
-  CLIENTE
-  COORDINADOR_AGENCIA
+// ======================= ENUMS =======================
+
+enum RolUsuario {
+  MATRICULADOR
+  SUPERADMIN
+
+  @@map("rol_usuario")
+  @@schema("auth")
 }
 
-enum ESTADO_TURNO {
-  DRAFT
-  PUBLISHED
-  CLAIMED
-  IN_PROGRESS
-  COMPLETED
-  SETTLED
-  CANCELLED_NO_FEE
-  CANCELLED_WITH_PENALTY
+enum NivelEducativo {
+  BASICA
+  MEDIA
+
+  @@map("nivel_educativo")
+  @@schema("matricula")
 }
 
-enum ESTADO_RESERVA {
-  AUTORIZADA
-  CAPTURADA
-  LIBERADA
-  REEMBOLSADA
-  FALLIDA
+enum EstadoMatricula {
+  VIGENTE
+  ANULADA
+  RETIRADA
+
+  @@map("estado_matricula")
+  @@schema("matricula")
 }
 
-enum TIPO_CUENTA_LIBRO {
-  CLIENTE
-  ESCROW
-  CUIDADOR
-  PLATAFORMA
+enum TipoResponsable {
+  PADRE
+  MADRE
+  TUTOR
+  OTRO
+
+  @@map("tipo_responsable")
+  @@schema("matricula")
 }
 
-enum TIPO_ASIENTO {
-  ESCROW_HOLD
-  ESCROW_RELEASE
-  PAYOUT
-  PLATFORM_FEE
-  PENALTY
-  REFUND
-  ADJUSTMENT
+// ======================= ESQUEMA auth =======================
+
+model Usuario {
+  idUsuario      Int        @id @default(autoincrement()) @map("id_usuario")
+  nombreCompleto String     @map("nombre_completo") @db.VarChar(100)
+  username       String     @unique @db.VarChar(30)
+  passwordHash   String     @map("password_hash") @db.VarChar(255)
+  rol            RolUsuario @default(MATRICULADOR)
+  activo         Boolean    @default(true)
+  ultimoAcceso   DateTime?  @map("ultimo_acceso") @db.Timestamptz(6)
+
+  matriculasRegistradas Matricula[] @relation("MatriculaRegistradaPor")
+  matriculasDadasDeBaja Matricula[] @relation("MatriculaBajaPor")
+
+  @@map("usuario")
+  @@schema("auth")
 }
 
-enum SENTIDO_MOVIMIENTO {
-  DEBITO
-  CREDITO
+// ======================= ESQUEMA matricula =======================
+
+model Curso {
+  idCurso  Int            @id @default(autoincrement()) @map("id_curso")
+  codigo   String         @unique @db.VarChar(5) // 7mo, 8vo, ... 12vo
+  nombre   String         @db.VarChar(20)
+  nivel    NivelEducativo
+  activo   Boolean        @default(true)
+
+  secciones Seccion[]
+
+  @@map("curso")
+  @@schema("matricula")
 }
 
-enum TIPO_VERIFICACION {
-  CHECK_IN
-  CHECK_OUT
+model Bachillerato {
+  idBachillerato Int     @id @default(autoincrement()) @map("id_bachillerato")
+  nombre         String  @unique @db.VarChar(60)
+  activo         Boolean @default(true)
+
+  secciones Seccion[]
+
+  @@map("bachillerato")
+  @@schema("matricula")
 }
 
-enum METODO_VERIFICACION {
-  QR
-  NFC
+model Seccion {
+  idSeccion      Int     @id @default(autoincrement()) @map("id_seccion")
+  anio           Int     @db.SmallInt
+  idCurso        Int     @map("id_curso")
+  numero         Int     @db.SmallInt
+  idBachillerato Int?    @map("id_bachillerato")
+  activo         Boolean @default(true)
+
+  curso        Curso         @relation(fields: [idCurso], references: [idCurso], onDelete: Restrict)
+  bachillerato Bachillerato? @relation(fields: [idBachillerato], references: [idBachillerato], onDelete: Restrict)
+  matriculas   Matricula[]
+
+  @@unique([anio, idCurso, numero, idBachillerato], map: "uq_seccion_anio_curso_numero_bach")
+  @@map("seccion")
+  @@schema("matricula")
 }
 
-enum ESTADO_DISPUTA {
-  ABIERTA
-  EN_REVISION
-  RESUELTA_A_FAVOR_CLIENTE
-  RESUELTA_A_FAVOR_CUIDADOR
-  RESUELTA_PARCIAL
+model Alumno {
+  idAlumno            Int       @id @default(autoincrement()) @map("id_alumno")
+  identidad           String    @unique @db.VarChar(20)
+  nombreCompleto      String    @map("nombre_completo") @db.VarChar(100)
+  fechaNacimiento     DateTime  @map("fecha_nacimiento") @db.Date
+  telefono            String?   @db.VarChar(20)
+  correo              String?   @db.VarChar(100)
+  direccion           String?   @db.VarChar(200)
+  emergenciaNombre    String?   @map("emergencia_nombre") @db.VarChar(100)
+  emergenciaDireccion String?   @map("emergencia_direccion") @db.VarChar(200)
+  emergenciaTelefono  String?   @map("emergencia_telefono") @db.VarChar(20)
+  activo              Boolean   @default(true)
+
+  responsables AlumnoResponsable[]
+  matriculas   Matricula[]
+
+  @@map("alumno")
+  @@schema("matricula")
 }
 
-enum ESTADO_REVISION {
-  NO_REQUERIDA
-  PENDIENTE
-  APROBADA
-  RECHAZADA
+model Responsable {
+  idResponsable    Int       @id @default(autoincrement()) @map("id_responsable")
+  identidad        String?   @unique @db.VarChar(20)
+  nombreCompleto   String    @map("nombre_completo") @db.VarChar(100)
+  telefonoFijo     String?   @map("telefono_fijo") @db.VarChar(20)
+  celular          String?   @db.VarChar(20)
+  correo           String?   @db.VarChar(100)
+  lugarNacimiento  String?   @map("lugar_nacimiento") @db.VarChar(100)
+  fechaNacimiento  DateTime? @map("fecha_nacimiento") @db.Date
+  ocupacion        String?   @db.VarChar(60)
+  direccion        String?   @db.VarChar(200)
+  // Procedencia (para el listado por localidad). No hay campo de salario.
+  departamento     String?   @db.VarChar(50)
+  municipio        String?   @db.VarChar(60)
+  aldeaColonia     String?   @map("aldea_colonia") @db.VarChar(100)
+  activo           Boolean   @default(true)
+
+  alumnos AlumnoResponsable[]
+
+  @@map("responsable")
+  @@schema("matricula")
 }
 
-enum ESTADO_TRABAJO_IA {
-  EN_COLA
-  PROCESANDO
-  COMPLETADO
-  FALLIDO
+model AlumnoResponsable {
+  idAlumno      Int             @map("id_alumno")
+  idResponsable Int             @map("id_responsable")
+  parentesco    TipoResponsable
+
+  alumno      Alumno      @relation(fields: [idAlumno], references: [idAlumno], onDelete: Restrict)
+  responsable Responsable @relation(fields: [idResponsable], references: [idResponsable], onDelete: Restrict)
+
+  @@id([idAlumno, idResponsable])
+  @@map("alumno_responsable")
+  @@schema("matricula")
 }
 
-// ============================================================
-// USUARIOS Y PERFILES
-// ============================================================
+model Matricula {
+  idMatricula      Int             @id @default(autoincrement()) @map("id_matricula")
+  idAlumno         Int             @map("id_alumno")
+  idSeccion        Int             @map("id_seccion")
+  anio             Int             @db.SmallInt
+  area             String?         @db.VarChar(40)
+  jornada          String?         @db.VarChar(20)
+  materiaRetrasada String?         @map("materia_retrasada") @db.VarChar(100)
+  fechaMatricula   DateTime        @default(now()) @map("fecha_matricula") @db.Date
+  estado           EstadoMatricula @default(VIGENTE)
+  registradoPor    Int             @map("registrado_por")
+  motivoBaja       String?         @map("motivo_baja") @db.VarChar(200)
+  bajaPor          Int?            @map("baja_por")
+  fechaBaja        DateTime?       @map("fecha_baja") @db.Timestamptz(6)
 
-model USUARIO {
-  ID_USER          String      @id @default(uuid()) @db.Uuid
-  CORREO           String      @unique @db.VarChar(100)
-  PASSWORD_HASH    String      @db.VarChar(255)
-  ROL              ROL_USUARIO
-  PRIMER_NOMBRE    String      @db.VarChar(30)
-  SEGUNDO_NOMBRE   String?     @db.VarChar(30)
-  PRIMER_APELLIDO  String      @db.VarChar(30)
-  SEGUNDO_APELLIDO String?     @db.VarChar(30)
-  TELEFONO         String?     @db.VarChar(20)
-  FECHA_REGISTRO   DateTime    @default(now()) @db.Timestamp(6)
-  ESTADO           Boolean
+  alumno          Alumno          @relation(fields: [idAlumno], references: [idAlumno], onDelete: Restrict)
+  seccion         Seccion         @relation(fields: [idSeccion], references: [idSeccion], onDelete: Restrict)
+  usuarioRegistro Usuario         @relation("MatriculaRegistradaPor", fields: [registradoPor], references: [idUsuario], onDelete: Restrict)
+  usuarioBaja     Usuario?        @relation("MatriculaBajaPor", fields: [bajaPor], references: [idUsuario], onDelete: Restrict)
+  salud           SaludMatricula?
 
-  perfilCuidador      PERFIL_CUIDADOR?
-  perfilCliente       PERFIL_CLIENTE?
-  perfilCoordinador   PERFIL_COORDINADOR?
-  turnosComoCliente   TURNO[]                @relation("TURNO_CLIENTE")
-  turnosComoCuidador  TURNO[]                @relation("TURNO_CUIDADOR")
-  historialComoActor  TURNO_HISTORIAL_ESTADO[]
-  eventosVerificacion EVENTO_VERIFICACION[]
-  registrosCuidado    REGISTRO_CUIDADO[]     @relation("REGISTRO_CUIDADOR")
-  registrosRevisados  REGISTRO_CUIDADO[]     @relation("REGISTRO_REVISOR")
-  metodosPago         METODO_PAGO[]
-  cuentasLibro        CUENTA_LIBRO[]
-  disputasAbiertas    DISPUTA[]              @relation("DISPUTA_ABIERTA_POR")
-  disputasResueltas   DISPUTA[]              @relation("DISPUTA_RESUELTA_POR")
-  notificaciones      NOTIFICACION[]
+  @@map("matricula")
+  @@schema("matricula")
 }
 
-model AGENCIA {
-  ID_AGENCIA String  @id @default(uuid()) @db.Uuid
-  NOMBRE     String  @db.VarChar(80)
-  RTN        String? @unique @db.VarChar(20)
-  DIRECCION  String? @db.VarChar(120)
-  ESTADO     Boolean
 
-  cuidadores    PERFIL_CUIDADOR[]
-  coordinadores PERFIL_COORDINADOR[]
-}
+model SaludMatricula {
+  idMatricula           Int     @id @map("id_matricula")
+  padeceEnfermedad      Boolean @default(false) @map("padece_enfermedad")
+  enfermedadDetalle     String? @map("enfermedad_detalle") @db.VarChar(200)
+  tomaMedicamento       Boolean @default(false) @map("toma_medicamento")
+  medicamentoDetalle    String? @map("medicamento_detalle") @db.VarChar(200)
+  tieneProblemaFisico   Boolean @default(false) @map("tiene_problema_fisico")
+  problemaFisicoDetalle String? @map("problema_fisico_detalle") @db.VarChar(200)
 
-model PERFIL_CUIDADOR {
-  ID_USER                String   @id @db.Uuid
-  ID_AGENCIA             String?  @db.Uuid // null: cuidador independiente
-  BIOGRAFIA              String?  @db.VarChar(300)
-  TARIFA_BASE_HORA       Decimal  @db.Decimal(10, 2)
-  RADIO_MAX_KM           Decimal? @db.Decimal(5, 2)
-  PUEDE_ELEVAR_TRASLADAR Boolean
-  CALIFICACION_PROMEDIO  Decimal? @db.Decimal(3, 2)
-  VERIFICADO             Boolean
+  matricula Matricula @relation(fields: [idMatricula], references: [idMatricula], onDelete: Restrict)
 
-  usuario         USUARIO                  @relation(fields: [ID_USER], references: [ID_USER])
-  agencia         AGENCIA?                 @relation(fields: [ID_AGENCIA], references: [ID_AGENCIA])
-  certificaciones CUIDADOR_CERTIFICACION[]
-}
-
-model PERFIL_CLIENTE {
-  ID_USER             String  @id @db.Uuid
-  NOMBRE_PACIENTE     String  @db.VarChar(80)
-  DIRECCION           String  @db.VarChar(150)
-  LATITUD             Decimal @db.Decimal(9, 6)
-  LONGITUD            Decimal @db.Decimal(9, 6)
-  NOTAS_ACCESO        String? @db.VarChar(150)
-  REQUIERE_MEDICACION Boolean
-
-  usuario USUARIO @relation(fields: [ID_USER], references: [ID_USER])
-}
-
-model PERFIL_COORDINADOR {
-  ID_USER    String  @id @db.Uuid
-  ID_AGENCIA String  @db.Uuid
-  CARGO      String? @db.VarChar(40)
-
-  usuario USUARIO @relation(fields: [ID_USER], references: [ID_USER])
-  agencia AGENCIA @relation(fields: [ID_AGENCIA], references: [ID_AGENCIA])
-}
-
-model CERTIFICACION {
-  ID_CERTIFICACION String  @id @default(uuid()) @db.Uuid
-  CODIGO           String  @unique @db.VarChar(20) // ej. RCP_BASICO
-  NOMBRE           String  @db.VarChar(60)
-  DESCRIPCION      String? @db.VarChar(100)
-
-  cuidadores CUIDADOR_CERTIFICACION[]
-  turnos     TURNO_CERTIFICACION_REQUERIDA[]
-}
-
-model CUIDADOR_CERTIFICACION {
-  ID_CUIDADOR_CERT  String    @id @default(uuid()) @db.Uuid
-  ID_USER           String    @db.Uuid // FK cuidador
-  ID_CERTIFICACION  String    @db.Uuid
-  FECHA_EMISION     DateTime? @db.Date
-  FECHA_VENCIMIENTO DateTime? @db.Date
-  URL_DOCUMENTO     String?   @db.VarChar(255)
-  VERIFICADA        Boolean
-
-  cuidador      PERFIL_CUIDADOR @relation(fields: [ID_USER], references: [ID_USER])
-  certificacion CERTIFICACION   @relation(fields: [ID_CERTIFICACION], references: [ID_CERTIFICACION])
-
-  @@unique([ID_USER, ID_CERTIFICACION])
-}
-
-// ============================================================
-// TURNOS
-// ============================================================
-
-model TURNO {
-  ID_TURNO               String       @id @default(uuid()) @db.Uuid
-  ID_CLIENTE             String       @db.Uuid
-  ID_CUIDADOR            String?      @db.Uuid // null hasta CLAIMED
-  TITULO                 String       @db.VarChar(80)
-  DESCRIPCION            String?      @db.VarChar(300)
-  ESTADO                 ESTADO_TURNO
-  FECHA_HORA_INICIO      DateTime     @db.Timestamp(6)
-  FECHA_HORA_FIN         DateTime     @db.Timestamp(6)
-  LATITUD                Decimal      @db.Decimal(9, 6)
-  LONGITUD               Decimal      @db.Decimal(9, 6)
-  DIRECCION              String       @db.VarChar(150)
-  TARIFA_BASE_HORA       Decimal      @db.Decimal(10, 2)
-  HORAS_ESTIMADAS        Decimal      @db.Decimal(5, 2)
-  BONO_URGENCIA          Decimal      @default(0) @db.Decimal(10, 2)
-  PORCENTAJE_PLATAFORMA  Decimal      @default(10.00) @db.Decimal(4, 2)
-  REQUIERE_MEDICACION    Boolean
-  REQUIERE_ELEVACION     Boolean
-  VERSION                Int          @default(0) // bloqueo optimista
-  FECHA_RECLAMO          DateTime?    @db.Timestamp(6)
-  FECHA_LIQUIDABLE       DateTime?    @db.Timestamp(6) // COMPLETED + 24h
-  FECHA_CREACION         DateTime     @default(now()) @db.Timestamp(6)
-  FECHA_ACTUALIZACION    DateTime     @updatedAt @db.Timestamp(6)
-
-  cliente                  USUARIO                         @relation("TURNO_CLIENTE", fields: [ID_CLIENTE], references: [ID_USER])
-  cuidador                 USUARIO?                        @relation("TURNO_CUIDADOR", fields: [ID_CUIDADOR], references: [ID_USER])
-  certificacionesRequeridas TURNO_CERTIFICACION_REQUERIDA[]
-  tareas                   TURNO_TAREA[]
-  historialEstados         TURNO_HISTORIAL_ESTADO[]
-  puntuacionesRiesgo       PUNTUACION_RIESGO_TURNO[]
-  eventosVerificacion      EVENTO_VERIFICACION[]
-  registroCuidado          REGISTRO_CUIDADO?
-  reserva                  RESERVA?
-  asientos                 ASIENTO_CONTABLE[]
-  disputas                 DISPUTA[]
-  notificaciones           NOTIFICACION[]
-
-  @@index([ID_CUIDADOR, FECHA_HORA_INICIO, FECHA_HORA_FIN])
-  @@index([ESTADO, FECHA_LIQUIDABLE])
-}
-
-model TURNO_CERTIFICACION_REQUERIDA {
-  ID_TURNO         String @db.Uuid
-  ID_CERTIFICACION String @db.Uuid
-
-  turno         TURNO         @relation(fields: [ID_TURNO], references: [ID_TURNO])
-  certificacion CERTIFICACION @relation(fields: [ID_CERTIFICACION], references: [ID_CERTIFICACION])
-
-  @@id([ID_TURNO, ID_CERTIFICACION])
-}
-
-model TURNO_TAREA {
-  ID_TAREA    String  @id @default(uuid()) @db.Uuid
-  ID_TURNO    String  @db.Uuid
-  DESCRIPCION String  @db.VarChar(120)
-  ORDEN       Int
-  OBLIGATORIA Boolean
-  COMPLETADA  Boolean @default(false)
-
-  turno TURNO @relation(fields: [ID_TURNO], references: [ID_TURNO])
-}
-
-model TURNO_HISTORIAL_ESTADO {
-  ID_HISTORIAL    String        @id @default(uuid()) @db.Uuid
-  ID_TURNO        String        @db.Uuid
-  ESTADO_ANTERIOR ESTADO_TURNO?
-  ESTADO_NUEVO    ESTADO_TURNO
-  ID_USER_ACTOR   String?       @db.Uuid // null si lo hizo el sistema/cron
-  MOTIVO          String?       @db.VarChar(120)
-  FECHA_HORA      DateTime      @default(now()) @db.Timestamp(6)
-
-  turno TURNO    @relation(fields: [ID_TURNO], references: [ID_TURNO])
-  actor USUARIO? @relation(fields: [ID_USER_ACTOR], references: [ID_USER])
-}
-
-model PUNTUACION_RIESGO_TURNO {
-  ID_PUNTUACION                  String   @id @default(uuid()) @db.Uuid
-  ID_TURNO                       String   @db.Uuid
-  PUNTUACION                     Int // 0 a 100
-  DISTANCIA_KM                   Decimal? @db.Decimal(6, 2)
-  FRECUENCIA_CANCELACION_CLIENTE Decimal? @db.Decimal(5, 2)
-  CANCELACIONES_PREVIAS_CUIDADOR Int?
-  // Diagrama: vector(32) con pgvector. Se usa real[] (alternativa indicada en el diagrama).
-  // Para pgvector: Unsupported("vector(32)")? + previewFeatures = ["postgresqlExtensions"]
-  EMBEDDING_HORA                 Float[]  @db.Real
-  VERSION_MODELO                 String?  @db.VarChar(20)
-  NOTIFICO_RESERVAS              Boolean  @default(false) // true si PUNTUACION > 75
-  FECHA_CALCULO                  DateTime @default(now()) @db.Timestamp(6)
-
-  turno TURNO @relation(fields: [ID_TURNO], references: [ID_TURNO])
-}
-
-// ============================================================
-// VERIFICACION (CHECK-IN / CHECK-OUT)
-// ============================================================
-
-model EVENTO_VERIFICACION {
-  ID_EVENTO        String              @id @default(uuid()) @db.Uuid
-  ID_TURNO         String              @db.Uuid
-  ID_CUIDADOR      String              @db.Uuid
-  TIPO             TIPO_VERIFICACION
-  METODO           METODO_VERIFICACION
-  TOKEN_VALIDADO   String?             @db.VarChar(80)
-  LATITUD          Decimal             @db.Decimal(9, 6)
-  LONGITUD         Decimal             @db.Decimal(9, 6)
-  DISTANCIA_METROS Decimal             @db.Decimal(8, 2) // debe ser <= 100 en CHECK_IN
-  DENTRO_DE_VENTANA Boolean // +-15 min del inicio
-  VALIDO           Boolean
-  FECHA_HORA       DateTime            @default(now()) @db.Timestamp(6)
-
-  turno    TURNO   @relation(fields: [ID_TURNO], references: [ID_TURNO])
-  cuidador USUARIO @relation(fields: [ID_CUIDADOR], references: [ID_USER])
-}
-
-// ============================================================
-// REGISTRO DE CUIDADO + SALIDA DE IA
-// ============================================================
-
-model REGISTRO_CUIDADO {
-  ID_REGISTRO                String          @id @default(uuid()) @db.Uuid
-  ID_TURNO                   String          @unique @db.Uuid // 1 registro por turno
-  ID_CUIDADOR                String          @db.Uuid
-  ENTRADA_CRUDA              String          @db.Text // transcripcion o texto borrador
-  URL_AUDIO                  String?         @db.VarChar(255)
-  SALIDA_ESTRUCTURADA        Json? // JSON validado por la IA
-  SIGNOS_VITALES_REGISTRADOS Boolean?
-  PUNTAJE_SENTIMIENTO        Decimal?        @db.Decimal(4, 2)
-  ESTADO_REVISION            ESTADO_REVISION @default(NO_REQUERIDA)
-  MOTIVO_REVISION            String?         @db.VarChar(120)
-  ID_REVISOR                 String?         @db.Uuid // coordinador
-  FECHA_REVISION             DateTime?       @db.Timestamp(6)
-  FECHA_ENVIO                DateTime        @default(now()) @db.Timestamp(6)
-
-  turno        TURNO                  @relation(fields: [ID_TURNO], references: [ID_TURNO])
-  cuidador     USUARIO                @relation("REGISTRO_CUIDADOR", fields: [ID_CUIDADOR], references: [ID_USER])
-  revisor      USUARIO?               @relation("REGISTRO_REVISOR", fields: [ID_REVISOR], references: [ID_USER])
-  medicamentos REGISTRO_MEDICAMENTO[]
-  anomalias    REGISTRO_ANOMALIA[]
-  trabajosIA   TRABAJO_IA[]
-}
-
-model REGISTRO_MEDICAMENTO {
-  ID_REG_MEDICAMENTO  String    @id @default(uuid()) @db.Uuid
-  ID_REGISTRO         String    @db.Uuid
-  NOMBRE_MEDICAMENTO  String    @db.VarChar(60)
-  DOSIS               String?   @db.VarChar(30)
-  HORA_ADMINISTRACION DateTime? @db.Timestamp(6)
-
-  registro REGISTRO_CUIDADO @relation(fields: [ID_REGISTRO], references: [ID_REGISTRO])
-}
-
-model REGISTRO_ANOMALIA {
-  ID_ANOMALIA String @id @default(uuid()) @db.Uuid
-  ID_REGISTRO String @db.Uuid
-  DESCRIPCION String @db.VarChar(150)
-  SEVERIDAD   String @db.VarChar(10) // BAJA, MEDIA, ALTA
-
-  registro REGISTRO_CUIDADO @relation(fields: [ID_REGISTRO], references: [ID_REGISTRO])
-}
-
-model TRABAJO_IA {
-  ID_TRABAJO     String            @id @default(uuid()) @db.Uuid
-  ID_REGISTRO    String            @db.Uuid
-  ESTADO         ESTADO_TRABAJO_IA
-  MODELO         String?           @db.VarChar(40)
-  INTENTOS       Int               @default(0)
-  ERROR          String?           @db.VarChar(200)
-  FECHA_ENCOLADO DateTime          @default(now()) @db.Timestamp(6)
-  FECHA_FIN      DateTime?         @db.Timestamp(6)
-
-  registro REGISTRO_CUIDADO @relation(fields: [ID_REGISTRO], references: [ID_REGISTRO])
-}
-
-// ============================================================
-// PAGOS, RESERVA Y LIBRO MAYOR (DOBLE ENTRADA)
-// ============================================================
-
-model METODO_PAGO {
-  ID_METODO_PAGO  String  @id @default(uuid()) @db.Uuid
-  ID_USER         String  @db.Uuid // cliente
-  TIPO            String  @db.VarChar(15) // TARJETA, TRANSFERENCIA
-  ULTIMOS_4       String? @db.VarChar(4)
-  TOKEN_PROVEEDOR String? @db.VarChar(100) // token del proveedor, nunca el numero real
-  PREDETERMINADO  Boolean
-  ESTADO          Boolean
-
-  usuario  USUARIO   @relation(fields: [ID_USER], references: [ID_USER])
-  reservas RESERVA[]
-}
-
-model RESERVA {
-  ID_RESERVA           String         @id @default(uuid()) @db.Uuid
-  ID_TURNO             String         @unique @db.Uuid
-  ID_METODO_PAGO       String         @db.Uuid
-  MONTO_AUTORIZADO     Decimal        @db.Decimal(12, 2)
-  ESTADO               ESTADO_RESERVA
-  REFERENCIA_PROVEEDOR String?        @db.VarChar(80)
-  FECHA_AUTORIZACION   DateTime       @default(now()) @db.Timestamp(6)
-
-  turno       TURNO       @relation(fields: [ID_TURNO], references: [ID_TURNO])
-  metodoPago  METODO_PAGO @relation(fields: [ID_METODO_PAGO], references: [ID_METODO_PAGO])
-}
-
-model CUENTA_LIBRO {
-  ID_CUENTA String            @id @default(uuid()) @db.Uuid
-  TIPO      TIPO_CUENTA_LIBRO
-  ID_USER   String?           @db.Uuid // null para ESCROW y PLATAFORMA
-  MONEDA    String            @default("HNL") @db.VarChar(3)
-  NOMBRE    String            @db.VarChar(60)
-
-  usuario     USUARIO?            @relation(fields: [ID_USER], references: [ID_USER])
-  movimientos MOVIMIENTO_LIBRO[]
-}
-
-model ASIENTO_CONTABLE {
-  ID_ASIENTO         String       @id @default(uuid()) @db.Uuid
-  ID_TURNO           String?      @db.Uuid
-  ID_DISPUTA         String?      @db.Uuid
-  TIPO               TIPO_ASIENTO
-  DESCRIPCION        String?      @db.VarChar(100)
-  CLAVE_IDEMPOTENCIA String       @unique @db.VarChar(80) // evita doble liquidacion del cron
-  FECHA_HORA         DateTime     @default(now()) @db.Timestamp(6)
-
-  turno       TURNO?             @relation(fields: [ID_TURNO], references: [ID_TURNO])
-  disputa     DISPUTA?           @relation(fields: [ID_DISPUTA], references: [ID_DISPUTA])
-  movimientos MOVIMIENTO_LIBRO[]
-}
-
-model MOVIMIENTO_LIBRO {
-  ID_MOVIMIENTO String             @id @default(uuid()) @db.Uuid
-  ID_ASIENTO    String             @db.Uuid
-  ID_CUENTA     String             @db.Uuid
-  SENTIDO       SENTIDO_MOVIMIENTO
-  MONTO         Decimal            @db.Decimal(12, 2) // siempre positivo; SUM(DEBITO) = SUM(CREDITO) por asiento
-
-  asiento ASIENTO_CONTABLE @relation(fields: [ID_ASIENTO], references: [ID_ASIENTO])
-  cuenta  CUENTA_LIBRO     @relation(fields: [ID_CUENTA], references: [ID_CUENTA])
-}
-
-// ============================================================
-// DISPUTAS
-// ============================================================
-
-model DISPUTA {
-  ID_DISPUTA       String         @id @default(uuid()) @db.Uuid
-  ID_TURNO         String         @db.Uuid
-  ID_ABIERTA_POR   String         @db.Uuid
-  ID_RESUELTA_POR  String?        @db.Uuid // coordinador
-  MOTIVO           String         @db.VarChar(150)
-  ESTADO           ESTADO_DISPUTA
-  MONTO_A_CLIENTE  Decimal?       @db.Decimal(12, 2)
-  MONTO_A_CUIDADOR Decimal?       @db.Decimal(12, 2)
-  RESOLUCION       String?        @db.VarChar(200)
-  FECHA_APERTURA   DateTime       @default(now()) @db.Timestamp(6)
-  FECHA_RESOLUCION DateTime?      @db.Timestamp(6)
-
-  turno        TURNO              @relation(fields: [ID_TURNO], references: [ID_TURNO])
-  abiertaPor   USUARIO            @relation("DISPUTA_ABIERTA_POR", fields: [ID_ABIERTA_POR], references: [ID_USER])
-  resueltaPor  USUARIO?           @relation("DISPUTA_RESUELTA_POR", fields: [ID_RESUELTA_POR], references: [ID_USER])
-  asientos     ASIENTO_CONTABLE[]
-}
-
-// ============================================================
-// NOTIFICACIONES
-// ============================================================
-
-model NOTIFICACION {
-  ID_NOTIFICACION String   @id @default(uuid()) @db.Uuid
-  ID_USER         String   @db.Uuid
-  ID_TURNO        String?  @db.Uuid
-  TIPO            String   @db.VarChar(30)
-  MENSAJE         String   @db.VarChar(200)
-  LEIDA           Boolean  @default(false)
-  FECHA_HORA      DateTime @default(now()) @db.Timestamp(6)
-
-  usuario USUARIO @relation(fields: [ID_USER], references: [ID_USER])
-  turno   TURNO?  @relation(fields: [ID_TURNO], references: [ID_TURNO])
+  @@map("salud_matricula")
+  @@schema("matricula")
 }
