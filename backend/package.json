@@ -5,7 +5,9 @@
   "description": "API REST - Sistema de Matrícula",
   "type": "commonjs",
   "main": "dist/main.js",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
@@ -18,17 +20,18 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@prisma/client": "^6.19.3",
     "dotenv": "^16.4.5",
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
     "pg": "^8.13.1",
     "pg-hstore": "^2.3.4",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
     "sequelize": "^6.37.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@types/node": "^22.0.0",
+    "prisma": "^6.19.3",
     "typescript": "^5.7.0"
   }
 }
-

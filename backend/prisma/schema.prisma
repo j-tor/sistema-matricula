@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth", "matricula"]
+}
+
+// ======================= ENUMS =======================
+
+enum RolUsuario {
+  MATRICULADOR
+  SUPERADMIN
+
+  @@map("rol_usuario")
+  @@schema("auth")
+}
+
+enum NivelEducativo {
+  BASICA
+  MEDIA
+
+  @@map("nivel_educativo")
+  @@schema("matricula")
+}
+
+enum EstadoMatricula {
+  VIGENTE
+  ANULADA
+  RETIRADA
+
+  @@map("estado_matricula")
+  @@schema("matricula")
+}
+
+enum TipoResponsable {
+  PADRE
+  MADRE
+  TUTOR
+  OTRO
+
+  @@map("tipo_responsable")
+  @@schema("matricula")
+}
+
+// ======================= ESQUEMA auth =======================
+
+model Usuario {
+  idUsuario      Int        @id @default(autoincrement()) @map("id_usuario")
+  nombreCompleto String     @map("nombre_completo") @db.VarChar(100)
+  username       String     @unique @db.VarChar(30)
+  passwordHash   String     @map("password_hash") @db.VarChar(255)
+  rol            RolUsuario @default(MATRICULADOR)
+  activo         Boolean    @default(true)
+  ultimoAcceso   DateTime?  @map("ultimo_acceso") @db.Timestamptz(6)
+
+  matriculasRegistradas Matricula[] @relation("MatriculaRegistradaPor")
+  matriculasDadasDeBaja Matricula[] @relation("MatriculaBajaPor")
+
+  @@map("usuario")
+  @@schema("auth")
+}
+
+// ======================= ESQUEMA matricula =======================
+
+model Curso {
+  idCurso  Int            @id @default(autoincrement()) @map("id_curso")
+  codigo   String         @unique @db.VarChar(5) // 7mo, 8vo, ... 12vo
+  nombre   String         @db.VarChar(20)
+  nivel    NivelEducativo
+  activo   Boolean        @default(true)
+
+  secciones Seccion[]
+
+  @@map("curso")
+  @@schema("matricula")
+}
+
+model Bachillerato {
+  idBachillerato Int     @id @default(autoincrement()) @map("id_bachillerato")
+  nombre         String  @unique @db.VarChar(60)
+  activo         Boolean @default(true)
+
+  secciones Seccion[]
+
+  @@map("bachillerato")
+  @@schema("matricula")
+}
+
+model Seccion {
+  idSeccion      Int     @id @default(autoincrement()) @map("id_seccion")
+  anio           Int     @db.SmallInt
+  idCurso        Int     @map("id_curso")
+  numero         Int     @db.SmallInt
+  idBachillerato Int?    @map("id_bachillerato")
+  activo         Boolean @default(true)
+
+  curso        Curso         @relation(fields: [idCurso], references: [idCurso], onDelete: Restrict)
+  bachillerato Bachillerato? @relation(fields: [idBachillerato], references: [idBachillerato], onDelete: Restrict)
+  matriculas   Matricula[]
+
+  @@unique([anio, idCurso, numero, idBachillerato], map: "uq_seccion_anio_curso_numero_bach")
+  @@map("seccion")
+  @@schema("matricula")
+}
+
+model Alumno {
+  idAlumno            Int       @id @default(autoincrement()) @map("id_alumno")
+  identidad           String    @unique @db.VarChar(20)
+  nombreCompleto      String    @map("nombre_completo") @db.VarChar(100)
+  fechaNacimiento     DateTime  @map("fecha_nacimiento") @db.Date
+  telefono            String?   @db.VarChar(20)
+  correo              String?   @db.VarChar(100)
+  direccion           String?   @db.VarChar(200)
+  emergenciaNombre    String?   @map("emergencia_nombre") @db.VarChar(100)
+  emergenciaDireccion String?   @map("emergencia_direccion") @db.VarChar(200)
+  emergenciaTelefono  String?   @map("emergencia_telefono") @db.VarChar(20)
+  activo              Boolean   @default(true)
+
+  responsables AlumnoResponsable[]
+  matriculas   Matricula[]
+
+  @@map("alumno")
+  @@schema("matricula")
+}
+
+model Responsable {
+  idResponsable    Int       @id @default(autoincrement()) @map("id_responsable")
+  identidad        String?   @unique @db.VarChar(20)
+  nombreCompleto   String    @map("nombre_completo") @db.VarChar(100)
+  telefonoFijo     String?   @map("telefono_fijo") @db.VarChar(20)
+  celular          String?   @db.VarChar(20)
+  correo           String?   @db.VarChar(100)
+  lugarNacimiento  String?   @map("lugar_nacimiento") @db.VarChar(100)
+  fechaNacimiento  DateTime? @map("fecha_nacimiento") @db.Date
+  ocupacion        String?   @db.VarChar(60)
+  direccion        String?   @db.VarChar(200)
+  // Procedencia (para el listado por localidad). No hay campo de salario.
+  departamento     String?   @db.VarChar(50)
+  municipio        String?   @db.VarChar(60)
+  aldeaColonia     String?   @map("aldea_colonia") @db.VarChar(100)
+  activo           Boolean   @default(true)
+
+  alumnos AlumnoResponsable[]
+
+  @@map("responsable")
+  @@schema("matricula")
+}
+
+model AlumnoResponsable {
+  idAlumno      Int             @map("id_alumno")
+  idResponsable Int             @map("id_responsable")
+  parentesco    TipoResponsable
+
+  alumno      Alumno      @relation(fields: [idAlumno], references: [idAlumno], onDelete: Restrict)
+  responsable Responsable @relation(fields: [idResponsable], references: [idResponsable], onDelete: Restrict)
+
+  @@id([idAlumno, idResponsable])
+  @@map("alumno_responsable")
+  @@schema("matricula")
+}
+
+model Matricula {
+  idMatricula      Int             @id @default(autoincrement()) @map("id_matricula")
+  idAlumno         Int             @map("id_alumno")
+  idSeccion        Int             @map("id_seccion")
+  anio             Int             @db.SmallInt
+  area             String?         @db.VarChar(40)
+  jornada          String?         @db.VarChar(20)
+  materiaRetrasada String?         @map("materia_retrasada") @db.VarChar(100)
+  fechaMatricula   DateTime        @default(now()) @map("fecha_matricula") @db.Date
+  estado           EstadoMatricula @default(VIGENTE)
+  registradoPor    Int             @map("registrado_por")
+  motivoBaja       String?         @map("motivo_baja") @db.VarChar(200)
+  bajaPor          Int?            @map("baja_por")
+  fechaBaja        DateTime?       @map("fecha_baja") @db.Timestamptz(6)
+
+  alumno          Alumno          @relation(fields: [idAlumno], references: [idAlumno], onDelete: Restrict)
+  seccion         Seccion         @relation(fields: [idSeccion], references: [idSeccion], onDelete: Restrict)
+  usuarioRegistro Usuario         @relation("MatriculaRegistradaPor", fields: [registradoPor], references: [idUsuario], onDelete: Restrict)
+  usuarioBaja     Usuario?        @relation("MatriculaBajaPor", fields: [bajaPor], references: [idUsuario], onDelete: Restrict)
+  salud           SaludMatricula?
+
+  @@map("matricula")
+  @@schema("matricula")
+}
+
+
+model SaludMatricula {
+  idMatricula           Int     @id @map("id_matricula")
+  padeceEnfermedad      Boolean @default(false) @map("padece_enfermedad")
+  enfermedadDetalle     String? @map("enfermedad_detalle") @db.VarChar(200)
+  tomaMedicamento       Boolean @default(false) @map("toma_medicamento")
+  medicamentoDetalle    String? @map("medicamento_detalle") @db.VarChar(200)
+  tieneProblemaFisico   Boolean @default(false) @map("tiene_problema_fisico")
+  problemaFisicoDetalle String? @map("problema_fisico_detalle") @db.VarChar(200)
+
+  matricula Matricula @relation(fields: [idMatricula], references: [idMatricula], onDelete: Restrict)
+
+  @@map("salud_matricula")
+  @@schema("matricula")
+}
