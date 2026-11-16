@@ -6,7 +6,7 @@ export class AppController {
   getInfo() {
     return {
       message: 'API Sistema de Matrícula v1.0',
-      endpoints: ['/health'],
+      endpoints: ['/health', '/api/anios-lectivos/actual'],
     };
   }
 }
