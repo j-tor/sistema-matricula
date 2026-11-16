@@ -21,7 +21,8 @@ test('API Nest: rutas, CORS y estados de conexión', async () => {
     assert.equal(api.status, 200);
     assert.equal(api.headers.get('access-control-allow-origin'), 'http://localhost:5174');
     assert.deepEqual(await api.json(), {
-      message: 'API Sistema de Matrícula v1.0', endpoints: ['/health'],
+      message: 'API Sistema de Matrícula v1.0',
+      endpoints: ['/health', '/api/anios-lectivos/actual'],
     });
     const health = await fetch(`${base}/health`);
     assert.equal(health.status, 200);

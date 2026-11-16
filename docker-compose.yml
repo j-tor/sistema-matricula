@@ -31,6 +31,7 @@ services:
       NODE_ENV: production
       PORT: 3005
       FRONTEND_URL: http://localhost:5174
+      ZONA_HORARIA: America/Tegucigalpa
       # Dentro de la red de Docker se usa el nombre del servicio y el puerto interno
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sistema_matricula
     ports:
