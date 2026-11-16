@@ -3,13 +3,17 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { NestFactory } = require('@nestjs/core');
 const { AppModule } = require('../dist/app.module');
-const { DatabaseService } = require('../dist/database/database.service');
+const { PrismaService } = require('../dist/database/prisma.service');
+
+// Simula la conexión para que las pruebas no dependan de PostgreSQL.
+PrismaService.prototype.$connect = async () => {};
+PrismaService.prototype.$disconnect = async () => {};
 
 test('API Nest: rutas, CORS y estados de conexión', async () => {
   const app = await NestFactory.create(AppModule, { logger: false });
   app.enableCors({ origin: 'http://localhost:5174', credentials: true });
-  const database = app.get(DatabaseService);
-  database.authenticate = async () => {};
+  const database = app.get(PrismaService);
+  database.ping = async () => {};
   await app.listen(0, '127.0.0.1');
   const base = await app.getUrl();
   try {
@@ -22,7 +26,7 @@ test('API Nest: rutas, CORS y estados de conexión', async () => {
     const health = await fetch(`${base}/health`);
     assert.equal(health.status, 200);
     assert.deepEqual(await health.json(), { status: 'ok', db: 'connected' });
-    database.authenticate = async () => { throw new Error('Database unavailable'); };
+    database.ping = async () => { throw new Error('Database unavailable'); };
     const failed = await fetch(`${base}/health`);
     assert.equal(failed.status, 500);
     assert.deepEqual(await failed.json(), {

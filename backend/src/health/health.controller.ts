@@ -1,14 +1,14 @@
 import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { PrismaService } from '../database/prisma.service';
 
 @Controller('health')
 export class HealthController {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   @Get()
   async check() {
     try {
-      await this.database.authenticate();
+      await this.prisma.ping();
       return { status: 'ok', db: 'connected' };
     } catch (error: unknown) {
       throw new HttpException(
