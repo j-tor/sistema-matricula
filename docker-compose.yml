@@ -12,11 +12,50 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sistema_matricula"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: sistema-matricula-backend
+    restart: unless-stopped
+    # Lee backend/.env si existe (p. ej. usuarios del seed); "environment" tiene prioridad
+    env_file:
+      - path: backend/.env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 3005
+      FRONTEND_URL: http://localhost:5174
+      # Dentro de la red de Docker se usa el nombre del servicio y el puerto interno
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sistema_matricula
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3005/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: sistema-matricula-frontend
+    restart: unless-stopped
+    ports:
+      - "5174:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   postgres_data:
-

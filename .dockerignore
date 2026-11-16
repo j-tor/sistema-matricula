@@ -1,0 +1,15 @@
+# Dependencias y compilados: se generan dentro de la imagen
+node_modules
+**/node_modules
+**/dist
+frontend/.vite
+
+# Variables locales: en Docker se definen en docker-compose.yml
+**/.env
+**/.env.*
+!**/.env.example
+
+.git
+.github
+docs
+*.md

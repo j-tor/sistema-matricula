@@ -9,10 +9,13 @@
     "dev:frontend": "pnpm --filter frontend dev",
     "build": "pnpm --filter backend build && pnpm --filter frontend build",
     "test": "pnpm --filter backend test",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f backend frontend",
+    "docker:seed": "docker compose exec backend pnpm db:seed"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
   }
 }
-
