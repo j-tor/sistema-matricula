@@ -5,13 +5,15 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
 import PageIntro from '../components/layout/PageIntro';
 import AvisoImportante from '../components/ui/AvisoImportante';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import CursoCard from '../components/cursos/CursoCard';
 import CursoFormDialog from '../components/cursos/CursoFormDialog';
 import SeccionFormDialog from '../components/cursos/SeccionFormDialog';
-import { nombreSeccion, totalEstudiantes } from '../components/cursos/niveles';
+import FiltroCursos, { filtroVacio } from '../components/cursos/FiltroCursos';
+import { filtrarCursos, nombreSeccion, totalEstudiantes } from '../components/cursos/niveles';
 // DATOS DE EJEMPLO: reemplazar por los cursos y bachilleratos del backend
 import { cursosEjemplo, bachilleratosEjemplo } from '../mocks/cursos';
 
@@ -24,6 +26,11 @@ export default function CursosSecciones() {
   const [cursoDialog, setCursoDialog] = useState({ abierto: false, curso: null });
   const [seccionDialog, setSeccionDialog] = useState({ abierto: false, curso: null, seccion: null });
   const [confirmacion, setConfirmacion] = useState(sinConfirmacion);
+  const [filtro, setFiltro] = useState(filtroVacio);
+
+  const cursosFiltrados = filtrarCursos(cursos, filtro);
+  // Las tarjetas filtradas pueden ocultar secciones: para editar o eliminar se usa el curso completo
+  const original = (curso) => cursos.find((c) => c.idCurso === curso.idCurso) ?? curso;
 
   const cerrarConfirmacion = () => setConfirmacion(sinConfirmacion);
 
@@ -91,7 +98,9 @@ export default function CursosSecciones() {
         años.
       </AvisoImportante>
 
-      {cursos.length === 0 ? (
+      {cursos.length > 0 && <FiltroCursos cursos={cursos} filtro={filtro} onCambiar={setFiltro} />}
+
+      {cursosFiltrados.length === 0 ? (
         <Paper
           elevation={0}
           sx={{
@@ -103,18 +112,32 @@ export default function CursosSecciones() {
             color: 'text.secondary',
           }}
         >
-          <MenuBookOutlinedIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-          <Typography sx={{ fontWeight: 700, color: 'primary.dark' }}>No hay cursos registrados</Typography>
-          <Typography sx={{ fontSize: 13, mt: 0.5 }}>Use “Crear curso” para agregar el primero.</Typography>
+          {cursos.length === 0 ? (
+            <>
+              <MenuBookOutlinedIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+              <Typography sx={{ fontWeight: 700, color: 'primary.dark' }}>No hay cursos registrados</Typography>
+              <Typography sx={{ fontSize: 13, mt: 0.5 }}>Use “Crear curso” para agregar el primero.</Typography>
+            </>
+          ) : (
+            <>
+              <SearchOffIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+              <Typography sx={{ fontWeight: 700, color: 'primary.dark' }}>
+                No hay cursos ni secciones que coincidan con los filtros
+              </Typography>
+              <Button onClick={() => setFiltro(filtroVacio)} sx={{ mt: 1 }}>
+                Limpiar filtros
+              </Button>
+            </>
+          )}
         </Paper>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: 2 }}>
-          {cursos.map((curso) => (
+          {cursosFiltrados.map((curso) => (
             <CursoCard
               key={curso.idCurso}
               curso={curso}
-              onEditar={(c) => setCursoDialog({ abierto: true, curso: c })}
-              onEliminar={eliminarCurso}
+              onEditar={(c) => setCursoDialog({ abierto: true, curso: original(c) })}
+              onEliminar={(c) => eliminarCurso(original(c))}
               onAgregarSeccion={(c) => setSeccionDialog({ abierto: true, curso: c, seccion: null })}
               onEditarSeccion={(c, s) => setSeccionDialog({ abierto: true, curso: c, seccion: { ...s, idCurso: c.idCurso } })}
               onEliminarSeccion={eliminarSeccion}
