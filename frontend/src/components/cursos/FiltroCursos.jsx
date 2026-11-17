@@ -22,6 +22,14 @@ const iconoSx = {
   '&:hover': { color: 'primary.main', borderColor: 'primary.main', bgcolor: 'primary.light' },
 };
 
+const limpiarActivoSx = {
+  ...iconoSx,
+  color: 'error.main',
+  borderColor: 'error.main',
+  bgcolor: '#FFF0F0',
+  '&:hover': { color: '#FFFFFF', borderColor: 'error.main', bgcolor: 'error.main' },
+};
+
 export const filtroVacio = { texto: '', idCurso: '', numeroSeccion: '', nivel: '' };
 
 /**
@@ -98,7 +106,8 @@ export default function FiltroCursos({ cursos = [], filtro, onCambiar, vista = '
               aria-label="Limpiar filtros"
               disabled={!hayFiltros}
               onClick={() => onCambiar(filtroVacio)}
-              sx={iconoSx}
+              // En rojo mientras haya filtros aplicados, para indicar que aquí se quitan
+              sx={hayFiltros ? limpiarActivoSx : iconoSx}
             >
               <FilterAltOffIcon fontSize="small" />
             </IconButton>
