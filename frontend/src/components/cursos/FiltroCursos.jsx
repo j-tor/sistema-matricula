@@ -1,11 +1,26 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
+import Tooltip from '@mui/material/Tooltip';
+import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
+import GridViewOutlinedIcon from '@mui/icons-material/GridViewOutlined';
+import ViewListOutlinedIcon from '@mui/icons-material/ViewListOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import Campo from '../ui/Campo';
 import Tarjeta from '../ui/Tarjeta';
 import { NIVELES } from './niveles';
+
+// Botones de ícono con borde suave: grises y azules al pasar el cursor
+const iconoSx = {
+  width: 40,
+  height: 40,
+  border: 1,
+  borderColor: 'divider',
+  borderRadius: 2,
+  color: 'text.secondary',
+  '&:hover': { color: 'primary.main', borderColor: 'primary.main', bgcolor: 'primary.light' },
+};
 
 export const filtroVacio = { texto: '', idCurso: '', numeroSeccion: '', nivel: '' };
 
@@ -13,8 +28,9 @@ export const filtroVacio = { texto: '', idCurso: '', numeroSeccion: '', nivel: '
  * Barra de filtros de cursos y secciones.
  * - texto: busca por nombre o código del curso, o por sección (ej. "7mo-1").
  * - idCurso, numeroSeccion, nivel: listas desplegables ("" = todos).
+ * - vista: botón que alterna las tarjetas entre "cuadricula" y "lista".
  */
-export default function FiltroCursos({ cursos = [], filtro, onCambiar }) {
+export default function FiltroCursos({ cursos = [], filtro, onCambiar, vista = 'cuadricula', onCambiarVista }) {
   const numerosSeccion = [...new Set(cursos.flatMap((c) => (c.secciones ?? []).map((s) => s.numero)))].sort((a, b) => a - b);
   const hayFiltros = Object.values(filtro).some((valor) => valor !== '');
 
@@ -25,7 +41,7 @@ export default function FiltroCursos({ cursos = [], filtro, onCambiar }) {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: '2fr repeat(3, 1fr) auto' },
+          gridTemplateColumns: { xs: '1fr', md: '4fr repeat(3, 1fr) auto auto' },
           gap: 1.5,
           alignItems: 'end',
         }}
@@ -75,9 +91,28 @@ export default function FiltroCursos({ cursos = [], filtro, onCambiar }) {
             </MenuItem>
           ))}
         </Campo>
-        <Button variant="outlined" disabled={!hayFiltros} onClick={() => onCambiar(filtroVacio)} sx={{ height: 40 }}>
-          Limpiar filtros
-        </Button>
+        <Tooltip title="Limpiar filtros">
+          {/* El span permite mostrar el texto de ayuda aunque el botón esté deshabilitado */}
+          <span>
+            <IconButton
+              aria-label="Limpiar filtros"
+              disabled={!hayFiltros}
+              onClick={() => onCambiar(filtroVacio)}
+              sx={iconoSx}
+            >
+              <FilterAltOffIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title={vista === 'lista' ? 'Ver como cuadrícula' : 'Ver como lista'}>
+          <IconButton
+            aria-label={vista === 'lista' ? 'Ver como cuadrícula' : 'Ver como lista'}
+            onClick={() => onCambiarVista(vista === 'lista' ? 'cuadricula' : 'lista')}
+            sx={iconoSx}
+          >
+            {vista === 'lista' ? <GridViewOutlinedIcon fontSize="small" /> : <ViewListOutlinedIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
       </Box>
     </Tarjeta>
   );

@@ -7,7 +7,6 @@ import AddIcon from '@mui/icons-material/Add';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
 import PageIntro from '../components/layout/PageIntro';
-import AvisoImportante from '../components/ui/AvisoImportante';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import CursoCard from '../components/cursos/CursoCard';
 import CursoFormDialog from '../components/cursos/CursoFormDialog';
@@ -27,6 +26,7 @@ export default function CursosSecciones() {
   const [seccionDialog, setSeccionDialog] = useState({ abierto: false, curso: null, seccion: null });
   const [confirmacion, setConfirmacion] = useState(sinConfirmacion);
   const [filtro, setFiltro] = useState(filtroVacio);
+  const [vista, setVista] = useState('cuadricula'); // "cuadricula" o "lista"
 
   const cursosFiltrados = filtrarCursos(cursos, filtro);
   // Las tarjetas filtradas pueden ocultar secciones: para editar o eliminar se usa el curso completo
@@ -93,12 +93,9 @@ export default function CursosSecciones() {
         }
       />
 
-      <AvisoImportante>
-        Una sección con estudiantes matriculados no puede eliminarse definitivamente. Puede desactivarla para próximos
-        años.
-      </AvisoImportante>
-
-      {cursos.length > 0 && <FiltroCursos cursos={cursos} filtro={filtro} onCambiar={setFiltro} />}
+      {cursos.length > 0 && (
+        <FiltroCursos cursos={cursos} filtro={filtro} onCambiar={setFiltro} vista={vista} onCambiarVista={setVista} />
+      )}
 
       {cursosFiltrados.length === 0 ? (
         <Paper
@@ -131,10 +128,17 @@ export default function CursosSecciones() {
           )}
         </Paper>
       ) : (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: 2 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: vista === 'lista' ? '1fr' : { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+            gap: vista === 'lista' ? 1.25 : 2,
+          }}
+        >
           {cursosFiltrados.map((curso) => (
             <CursoCard
               key={curso.idCurso}
+              vista={vista}
               curso={curso}
               onEditar={(c) => setCursoDialog({ abierto: true, curso: original(c) })}
               onEliminar={(c) => eliminarCurso(original(c))}
