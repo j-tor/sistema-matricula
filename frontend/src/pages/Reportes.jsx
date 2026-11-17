@@ -1,9 +1,5 @@
-import { Container, Typography } from '@mui/material';
+import PageIntro from '../components/layout/PageIntro';
 
 export default function Reportes() {
-  return (
-    <Container sx={{ py: 4 }}>
-      <Typography variant="h4">Reportes</Typography>
-    </Container>
-  );
+  return <PageIntro titulo="Reportes" descripcion="Genere y exporte listados de matrícula." />;
 }
