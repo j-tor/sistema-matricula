@@ -23,7 +23,9 @@ export default function CursoFormDialog({ abierto, curso, onCerrar, onGuardar })
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onGuardar(form);
+    // El código no se envía: lo genera el sistema
+    const { codigo: _codigo, ...datos } = form;
+    onGuardar(datos);
   };
 
   return (
@@ -39,7 +41,14 @@ export default function CursoFormDialog({ abierto, curso, onCerrar, onGuardar })
           {editando ? 'Editar curso' : 'Crear curso'}
         </DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-          <Campo label="Código" placeholder="Ej. 7mo" required value={form.codigo} onChange={cambiar('codigo')} />
+          {/* El código lo asigna el sistema al guardar: aquí solo se muestra */}
+          <Campo
+            label="Código"
+            value={editando ? form.codigo : ''}
+            placeholder="Se genera automáticamente"
+            disabled
+            ayuda={editando ? 'El código no se puede modificar.' : 'El sistema asigna el código al guardar el curso.'}
+          />
           <Campo label="Nombre" placeholder="Ej. Séptimo grado" required value={form.nombre} onChange={cambiar('nombre')} />
           <Campo label="Nivel" select required value={form.nivel} onChange={cambiar('nivel')}>
             {Object.entries(NIVELES).map(([valor, etiqueta]) => (
