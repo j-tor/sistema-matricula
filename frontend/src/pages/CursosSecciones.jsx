@@ -1,9 +1,7 @@
-import { Container, Typography } from '@mui/material';
+import PageIntro from '../components/layout/PageIntro';
 
 export default function CursosSecciones() {
   return (
-    <Container sx={{ py: 4 }}>
-      <Typography variant="h4">Cursos y secciones</Typography>
-    </Container>
+    <PageIntro titulo="Cursos y secciones" descripcion="Administre la estructura académica del centro educativo." />
   );
 }

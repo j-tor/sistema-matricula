@@ -1,9 +1,5 @@
-import { Container, Typography } from '@mui/material';
+import PageIntro from '../components/layout/PageIntro';
 
 export default function BuscarMatriculas() {
-  return (
-    <Container sx={{ py: 4 }}>
-      <Typography variant="h4">Buscar matrículas</Typography>
-    </Container>
-  );
+  return <PageIntro titulo="Buscar matrículas" descripcion="Consulte expedientes e historial de estudiantes." />;
 }

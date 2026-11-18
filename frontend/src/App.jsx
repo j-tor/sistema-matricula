@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import AppLayout from "./layouts/AppLayout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NuevaMatricula from "./pages/NuevaMatricula";
@@ -11,12 +12,16 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/nueva-matricula" element={<NuevaMatricula />} />
-        <Route path="/buscar-matriculas" element={<BuscarMatriculas />} />
-        <Route path="/cursos-secciones" element={<CursosSecciones />} />
-        <Route path="/reportes" element={<Reportes />} />
+
+        {/* Pantallas con el menú principal */}
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/nueva-matricula" element={<NuevaMatricula />} />
+          <Route path="/buscar-matriculas" element={<BuscarMatriculas />} />
+          <Route path="/cursos-secciones" element={<CursosSecciones />} />
+          <Route path="/reportes" element={<Reportes />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
