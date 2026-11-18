@@ -12,13 +12,14 @@ import CursoCard from '../components/cursos/CursoCard';
 import CursoFormDialog from '../components/cursos/CursoFormDialog';
 import SeccionFormDialog from '../components/cursos/SeccionFormDialog';
 import { nombreSeccion, totalEstudiantes } from '../components/cursos/niveles';
+// DATOS DE EJEMPLO: reemplazar por los cursos y bachilleratos del backend
+import { cursosEjemplo, bachilleratosEjemplo } from '../mocks/cursos';
 
 const sinConfirmacion = { abierto: false };
 
 export default function CursosSecciones() {
-  // Solo visual: los cursos y bachilleratos se cargarán desde el backend
-  const [cursos] = useState([]);
-  const [bachilleratos] = useState([]);
+  const [cursos] = useState(cursosEjemplo);
+  const [bachilleratos] = useState(bachilleratosEjemplo);
 
   const [cursoDialog, setCursoDialog] = useState({ abierto: false, curso: null });
   const [seccionDialog, setSeccionDialog] = useState({ abierto: false, curso: null, seccion: null });

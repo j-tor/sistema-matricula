@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import MenuItem from '@mui/material/MenuItem';
@@ -14,9 +15,11 @@ const iniciales = (nombre) =>
 
 /**
  * Barra superior con el título de la pantalla, el año lectivo y el usuario conectado.
- * Solo visual: el usuario y los años se recibirán del backend cuando exista la sesión.
+ * Por ahora recibe datos de ejemplo; el usuario y los años vendrán del backend cuando exista la sesión.
  */
 export default function Topbar({ titulo, usuario, aniosLectivos = [], anioLectivo = '' }) {
+  const [anio, setAnio] = useState(anioLectivo);
+
   return (
     <Box
       component="header"
@@ -46,11 +49,11 @@ export default function Topbar({ titulo, usuario, aniosLectivos = [], anioLectiv
           <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
             Año lectivo
           </Typography>
-          <Select size="small" value={anioLectivo} displayEmpty sx={{ height: 38, minWidth: 90, fontSize: 13 }}>
+          <Select size="small" value={anio} onChange={(e) => setAnio(e.target.value)} displayEmpty sx={{ height: 38, minWidth: 90, fontSize: 13 }}>
             {aniosLectivos.length === 0 && <MenuItem value="">—</MenuItem>}
-            {aniosLectivos.map((anio) => (
-              <MenuItem key={anio} value={anio}>
-                {anio}
+            {aniosLectivos.map((opcion) => (
+              <MenuItem key={opcion} value={opcion}>
+                {opcion}
               </MenuItem>
             ))}
           </Select>
