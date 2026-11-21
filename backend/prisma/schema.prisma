@@ -64,6 +64,13 @@ model Usuario {
 }
 
 // ======================= ESQUEMA matricula =======================
+model AnioLectivo {
+  anio   Int     @id @db.SmallInt
+  activo Boolean @default(true)
+
+  @@map("anio_lectivo")
+  @@schema("matricula")
+}
 
 model Curso {
   idCurso  Int            @id @default(autoincrement()) @map("id_curso")
