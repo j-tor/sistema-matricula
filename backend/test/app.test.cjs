@@ -14,10 +14,14 @@ test('API Nest: rutas, CORS y estados de conexión', async () => {
   app.enableCors({ origin: 'http://localhost:5174', credentials: true });
   const database = app.get(PrismaService);
   database.ping = async () => {};
+  database.sesion.findFirst = async () => ({ usuario: { idUsuario: 1 } });
   await app.listen(0, '127.0.0.1');
   const base = await app.getUrl();
   try {
-    const api = await fetch(`${base}/api`, { headers: { Origin: 'http://localhost:5174' } });
+    assert.equal((await fetch(`${base}/api`)).status, 401);
+    const api = await fetch(`${base}/api`, {
+      headers: { Origin: 'http://localhost:5174', Authorization: 'Bearer ' + 'A'.repeat(43) },
+    });
     assert.equal(api.status, 200);
     assert.equal(api.headers.get('access-control-allow-origin'), 'http://localhost:5174');
     assert.deepEqual(await api.json(), {

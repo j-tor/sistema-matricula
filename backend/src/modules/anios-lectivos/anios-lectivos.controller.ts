@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AniosLectivosService } from "./anios-lectivos.service";
+import { UsuarioActual } from "../autenticacion/sesion.guard";
 import { AnioLectivoPipe } from "./anio-lectivo.pipe";
 
 @ApiTags("Años lectivos")
@@ -40,8 +41,8 @@ export class AniosLectivosController {
       },
     },
   })
-  crear(@Body() body: unknown) {
-    return this.aniosLectivos.crear(body);
+  crear(@Body() body: unknown, @UsuarioActual() usuario: { idUsuario: number }) {
+    return this.aniosLectivos.crear(body, usuario.idUsuario);
   }
 
   @Patch(":anio/estado")
@@ -58,8 +59,9 @@ export class AniosLectivosController {
   cambiarEstado(
     @Param("anio", AnioLectivoPipe) anio: number,
     @Body() body: unknown,
+    @UsuarioActual() usuario: { idUsuario: number },
   ) {
-    return this.aniosLectivos.cambiarEstado(anio, body);
+    return this.aniosLectivos.cambiarEstado(anio, body, usuario.idUsuario);
   }
 
   @Patch(":anio")
@@ -77,7 +79,8 @@ export class AniosLectivosController {
   actualizar(
     @Param("anio", AnioLectivoPipe) anio: number,
     @Body() body: unknown,
+    @UsuarioActual() usuario: { idUsuario: number },
   ) {
-    return this.aniosLectivos.actualizar(anio, body);
+    return this.aniosLectivos.actualizar(anio, body, usuario.idUsuario);
   }
 }

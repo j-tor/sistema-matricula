@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useOutletContext } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
 import Sidebar, { SIDEBAR_WIDTH } from "../components/layout/Sidebar";
 import Topbar from "../components/layout/Topbar";
 import menu from "../components/layout/menu";
-import { usuarioEjemplo } from "../mocks/sesion";
+import api from "../services/api";
 
 export default function AppLayout() {
   const { pathname } = useLocation();
+  const usuario = useOutletContext();
   const opcionActual = menu.find((opcion) => opcion.path === pathname);
 
   const [aniosLectivos, setAniosLectivos] = useState([]);
@@ -21,20 +22,16 @@ export default function AppLayout() {
     async function cargarAnios() {
       try {
         const [respuestaActual, respuestaAnios] = await Promise.all([
-          fetch("/api/anios-lectivos/actual", {
+          api.get("/anios-lectivos/actual", {
             signal: controller.signal,
           }),
-          fetch("/api/anios-lectivos", {
+          api.get("/anios-lectivos", {
             signal: controller.signal,
           }),
         ]);
 
-        if (!respuestaActual.ok || !respuestaAnios.ok) {
-          throw new Error("Error al consultar los años lectivos");
-        }
-
-        const { anioActual } = await respuestaActual.json();
-        const registros = await respuestaAnios.json();
+        const { anioActual } = respuestaActual.data;
+        const registros = respuestaAnios.data;
 
         if (!Number.isInteger(anioActual) || !Array.isArray(registros)) {
           throw new Error("Respuesta inválida del servidor");
@@ -87,7 +84,7 @@ export default function AppLayout() {
       >
         <Topbar
           titulo={opcionActual?.label ?? ""}
-          usuario={usuarioEjemplo}
+          usuario={{ nombre: usuario.nombreCompleto, rol: usuario.rol === "SUPERADMIN" ? "Superadministrador" : "Matriculador" }}
           aniosLectivos={aniosLectivos}
           anioLectivo={anioLectivo}
           onAnioChange={setAnioLectivo}
@@ -108,7 +105,7 @@ export default function AppLayout() {
               {errorAnios}
             </Alert>
           )}
-          <Outlet context={{ anioLectivo }} />
+          <Outlet context={{ anioLectivo, usuario }} />
         </Box>
       </Box>
     </Box>

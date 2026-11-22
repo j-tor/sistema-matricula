@@ -5,6 +5,7 @@ const { Controller, Get, Module, BadRequestException } = require('@nestjs/common
 const { NestFactory } = require('@nestjs/core');
 const { Prisma } = require('@prisma/client');
 const { AppModule } = require('../dist/app.module');
+const { DatabaseModule } = require('../dist/database/database.module');
 const { PrismaService } = require('../dist/database/prisma.service');
 const { AniosLectivosModule } = require('../dist/modules/anios-lectivos/anios-lectivos.module');
 const { AnioLectivoPipe } = require('../dist/modules/anios-lectivos/anio-lectivo.pipe');
@@ -60,9 +61,12 @@ test('el pipe convierte el texto a número y aplica la regla', () => {
 
 test('GET /api/anios-lectivos/actual devuelve el año del servidor', async () => {
   const app = await NestFactory.create(AppModule, { logger: false });
+  app.get(PrismaService).sesion.findFirst = async () => ({ usuario: { idUsuario: 1 } });
   await app.listen(0, '127.0.0.1');
   try {
-    const respuesta = await fetch(`${await app.getUrl()}/api/anios-lectivos/actual`);
+    const url = `${await app.getUrl()}/api/anios-lectivos/actual`;
+    assert.equal((await fetch(url)).status, 401);
+    const respuesta = await fetch(url, { headers: { Authorization: 'Bearer ' + 'A'.repeat(43) } });
     assert.equal(respuesta.status, 200);
     assert.deepEqual(await respuesta.json(), { anioActual: ANIO_ACTUAL });
   } finally {
@@ -88,7 +92,7 @@ test('el rechazo de la base de datos se responde como 400 con el mensaje', async
   Controller('prueba')(PruebaController);
 
   class PruebaModule {}
-  Module({ imports: [AniosLectivosModule], controllers: [PruebaController] })(PruebaModule);
+  Module({ imports: [DatabaseModule, AniosLectivosModule], controllers: [PruebaController] })(PruebaModule);
 
   const app = await NestFactory.create(PruebaModule, { logger: false });
   await app.listen(0, '127.0.0.1');
