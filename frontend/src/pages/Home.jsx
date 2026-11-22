@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
@@ -13,7 +13,6 @@ import PorMatriculador from '../components/inicio/PorMatriculador';
 import ResumenPorSeccion from '../components/inicio/ResumenPorSeccion';
 // DATOS DE EJEMPLO: reemplazar por la información del backend
 import resumen from '../mocks/inicio';
-import { usuarioEjemplo } from '../mocks/sesion';
 
 const saludo = () => {
   const hora = new Date().getHours();
@@ -24,7 +23,8 @@ const saludo = () => {
 
 function Home() {
   const { totales } = resumen;
-  const nombre = usuarioEjemplo.nombre.split(' ')[0];
+  const { usuario } = useOutletContext();
+  const nombre = usuario.nombreCompleto.split(' ')[0];
 
   return (
     <>

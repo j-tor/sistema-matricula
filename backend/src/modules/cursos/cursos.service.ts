@@ -36,29 +36,24 @@ export class CursosService {
     return curso;
   }
 
-  async crear(body: unknown) {
-    const datos = this.validarDatos(body);
+  async crear(body: unknown, idUsuario: number) {
+    const { codigo, nombre, nivel, activo } = this.validarDatos(body);
 
-    if (!datos.codigo || !datos.nombre || !datos.nivel) {
+    if (!codigo || !nombre || !nivel) {
       throw new BadRequestException("Código, nombre y nivel son obligatorios");
     }
 
     try {
-      return await this.prisma.curso.create({
-        data: {
-          codigo: datos.codigo,
-          nombre: datos.nombre,
-          nivel: datos.nivel,
-          activo: datos.activo ?? true,
-        },
-      });
+      return await this.prisma.conAuditoria(idUsuario, (tx) => tx.curso.create({
+        data: { codigo, nombre, nivel, activo: activo ?? true },
+      }));
     } catch (error) {
       this.manejarError(error);
       throw error;
     }
   }
 
-  async actualizar(idCurso: number, body: unknown) {
+  async actualizar(idCurso: number, body: unknown, idUsuario: number) {
     const datos = this.validarDatos(body);
 
     if (Object.keys(datos).length === 0) {
@@ -70,17 +65,17 @@ export class CursosService {
     await this.obtener(idCurso);
 
     try {
-      return await this.prisma.curso.update({
+      return await this.prisma.conAuditoria(idUsuario, (tx) => tx.curso.update({
         where: { idCurso },
         data: datos,
-      });
+      }));
     } catch (error) {
       this.manejarError(error);
       throw error;
     }
   }
 
-  async eliminar(idCurso: number) {
+  async eliminar(idCurso: number, idUsuario: number) {
     const curso = await this.prisma.curso.findUnique({
       where: { idCurso },
       include: {
@@ -95,10 +90,10 @@ export class CursosService {
     }
 
     if (curso._count.secciones > 0) {
-      const actualizado = await this.prisma.curso.update({
+      const actualizado = await this.prisma.conAuditoria(idUsuario, (tx) => tx.curso.update({
         where: { idCurso },
         data: { activo: false },
-      });
+      }));
 
       return {
         mensaje:
@@ -108,9 +103,9 @@ export class CursosService {
     }
 
     try {
-      await this.prisma.curso.delete({
+      await this.prisma.conAuditoria(idUsuario, (tx) => tx.curso.delete({
         where: { idCurso },
-      });
+      }));
 
       return {
         mensaje: "Curso eliminado correctamente",
@@ -120,10 +115,10 @@ export class CursosService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2003"
       ) {
-        const actualizado = await this.prisma.curso.update({
+        const actualizado = await this.prisma.conAuditoria(idUsuario, (tx) => tx.curso.update({
           where: { idCurso },
           data: { activo: false },
-        });
+        }));
 
         return {
           mensaje: "El curso tiene registros relacionados y fue desactivado",

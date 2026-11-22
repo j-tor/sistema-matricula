@@ -9,6 +9,7 @@ import {
   Post,
 } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { UsuarioActual } from "../autenticacion/sesion.guard";
 import { CursosService } from "./cursos.service";
 
 @ApiTags("Cursos")
@@ -46,8 +47,8 @@ export class CursosController {
       },
     },
   })
-  crear(@Body() body: unknown) {
-    return this.cursosService.crear(body);
+  crear(@Body() body: unknown, @UsuarioActual() usuario: { idUsuario: number }) {
+    return this.cursosService.crear(body, usuario.idUsuario);
   }
 
   @Patch(":id")
@@ -67,15 +68,15 @@ export class CursosController {
       },
     },
   })
-  actualizar(@Param("id", ParseIntPipe) id: number, @Body() body: unknown) {
-    return this.cursosService.actualizar(id, body);
+  actualizar(@Param("id", ParseIntPipe) id: number, @Body() body: unknown, @UsuarioActual() usuario: { idUsuario: number }) {
+    return this.cursosService.actualizar(id, body, usuario.idUsuario);
   }
 
   @Delete(":id")
   @ApiOperation({
     summary: "Eliminar o desactivar un curso según sus relaciones",
   })
-  eliminar(@Param("id", ParseIntPipe) id: number) {
-    return this.cursosService.eliminar(id);
+  eliminar(@Param("id", ParseIntPipe) id: number, @UsuarioActual() usuario: { idUsuario: number }) {
+    return this.cursosService.eliminar(id, usuario.idUsuario);
   }
 }

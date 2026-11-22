@@ -38,7 +38,7 @@ export class AniosLectivosService {
     return registro;
   }
 
-  async crear(body: unknown) {
+  async crear(body: unknown, idUsuario: number) {
     const datos = this.validarObjeto(body);
     this.validarCampos(datos, ["anio", "activo"]);
 
@@ -52,16 +52,16 @@ export class AniosLectivosService {
     }
 
     try {
-      return await this.prisma.anioLectivo.create({
+      return await this.prisma.conAuditoria(idUsuario, (tx) => tx.anioLectivo.create({
         data: { anio, activo },
-      });
+      }));
     } catch (error) {
       this.manejarError(error);
       throw error;
     }
   }
 
-  async actualizar(anioActual: number, body: unknown) {
+  async actualizar(anioActual: number, body: unknown, idUsuario: number) {
     const datos = this.validarObjeto(body);
     this.validarCampos(datos, ["anio", "activo"]);
 
@@ -85,7 +85,7 @@ export class AniosLectivosService {
     }
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.prisma.conAuditoria(idUsuario, async (tx) => {
         const existente = await tx.anioLectivo.findUnique({
           where: { anio: anioActual },
         });
@@ -135,7 +135,7 @@ export class AniosLectivosService {
     }
   }
 
-  async cambiarEstado(anio: number, body: unknown) {
+  async cambiarEstado(anio: number, body: unknown, idUsuario: number) {
     const datos = this.validarObjeto(body);
     this.validarCampos(datos, ["activo"]);
 
@@ -145,12 +145,13 @@ export class AniosLectivosService {
       );
     }
 
+    const activo = datos.activo;
     await this.obtener(anio);
 
-    return this.prisma.anioLectivo.update({
+    return this.prisma.conAuditoria(idUsuario, (tx) => tx.anioLectivo.update({
       where: { anio },
-      data: { activo: datos.activo },
-    });
+      data: { activo },
+    }));
   }
 
   private validarAnioEntrada(valor: unknown): number {

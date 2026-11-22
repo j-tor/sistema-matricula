@@ -20,6 +20,8 @@ async function bootstrap(): Promise<void> {
       "Documentación de la API REST del Sistema de Matrícula Estudiantil.",
     )
     .setVersion("1.0")
+    .addBearerAuth()
+    .addSecurityRequirements("bearer")
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

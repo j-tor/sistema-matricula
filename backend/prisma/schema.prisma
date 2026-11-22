@@ -58,8 +58,36 @@ model Usuario {
 
   matriculasRegistradas Matricula[] @relation("MatriculaRegistradaPor")
   matriculasDadasDeBaja Matricula[] @relation("MatriculaBajaPor")
+  sesiones              Sesion[]
+  cambios               AuditoriaCambio[]
 
   @@map("usuario")
+  @@schema("auth")
+}
+
+model AuditoriaCambio {
+  id               BigInt   @id @default(autoincrement())
+  tabla            String
+  registro         Json
+  registroAnterior Json?    @map("registro_anterior")
+  operacion        String
+  idUsuario        Int?     @map("id_usuario")
+  ocurridoEn       DateTime @default(dbgenerated("clock_timestamp()")) @map("ocurrido_en") @db.Timestamptz(6)
+  usuario          Usuario? @relation(fields: [idUsuario], references: [idUsuario], onDelete: Restrict)
+
+  @@index([tabla, registro])
+  @@map("auditoria_cambio")
+  @@schema("auth")
+}
+
+model Sesion {
+  tokenHash String   @id @map("token_hash") @db.VarChar(64)
+  idUsuario Int      @map("id_usuario")
+  expiraEn  DateTime @map("expira_en") @db.Timestamptz(6)
+  usuario   Usuario  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@index([idUsuario, expiraEn])
+  @@map("sesion")
   @@schema("auth")
 }
 

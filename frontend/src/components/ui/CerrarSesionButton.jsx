@@ -1,17 +1,24 @@
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import Button from '@mui/material/Button';
 import LogoutIcon from '@mui/icons-material/Logout';
+import api, { terminarSesion } from '../../services/api';
 
-/**
- * Botón "Cerrar sesión". Por ahora solo regresa a la pantalla de inicio de sesión;
- * el menú lateral (#26) lo reutilizará con su propio estilo mediante `sx`.
- */
 export default function CerrarSesionButton({ sx, ...props }) {
-  const navigate = useNavigate();
+  const [estado, setEstado] = useState('listo');
+
+  async function cerrar() {
+    setEstado('cerrando');
+    try {
+      await api.post('/autenticacion/logout');
+      terminarSesion();
+    } catch (error) {
+      if (error.response?.status !== 401) setEstado('error');
+    }
+  }
 
   return (
-    <Button startIcon={<LogoutIcon />} onClick={() => navigate('/login')} sx={sx} {...props}>
-      Cerrar sesión
+    <Button {...props} startIcon={<LogoutIcon />} onClick={cerrar} disabled={estado === 'cerrando'} sx={sx}>
+      {estado === 'error' ? 'Reintentar cierre de sesión' : 'Cerrar sesión'}
     </Button>
   );
 }

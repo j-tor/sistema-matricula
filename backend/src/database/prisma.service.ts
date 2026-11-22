@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 /**
  * Cliente de Prisma inyectable. Usa la variable DATABASE_URL del archivo .env.
@@ -24,5 +24,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   /** Verifica que la base de datos responda. Lanza un error si no hay conexión. */
   async ping(): Promise<void> {
     await this.$queryRaw`SELECT 1`;
+  }
+
+  conAuditoria<T>(idUsuario: number, operacion: (tx: Prisma.TransactionClient) => Promise<T>) {
+    return this.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT set_config('matricula.actor_id', ${String(idUsuario)}, true)`;
+      return operacion(tx);
+    });
   }
 }

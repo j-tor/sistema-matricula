@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -9,6 +9,7 @@ import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Logo from '../components/ui/Logo';
+import api, { guardarSesion } from '../services/api';
 
 // Etiqueta visible arriba del campo, como en el diseño
 function Campo({ label, ...props }) {
@@ -28,19 +29,32 @@ function Campo({ label, ...props }) {
 
 export default function Login() {
   const navigate = useNavigate();
+  const { state } = useLocation();
   const [usuario, setUsuario] = useState('');
   const [contrasena, setContrasena] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
-  // Solo visual: la autenticación real se conectará cuando exista el endpoint
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!usuario.trim() || !contrasena.trim()) {
-      setError(true);
+    if (enviando) return;
+    if (!usuario.trim() || !contrasena) {
+      setError('Ingrese su usuario y contraseña.');
       return;
     }
-    setError(false);
-    navigate('/');
+    setError('');
+    setEnviando(true);
+    try {
+      const { data } = await api.post('/autenticacion/login', { username: usuario, password: contrasena });
+      guardarSesion(data);
+      navigate(state?.destino ?? '/', { replace: true });
+    } catch (causa) {
+      setError([400, 401].includes(causa.response?.status)
+        ? 'Usuario o contraseña incorrectos.'
+        : 'No se pudo conectar con el servidor. Intente de nuevo.');
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -101,7 +115,7 @@ export default function Login() {
 
           {error && (
             <Alert severity="error" variant="outlined" sx={{ mb: 2, bgcolor: '#FFF0F0', borderColor: '#EFC0C0' }}>
-              Usuario o contraseña incorrectos. Verifique sus datos e intente de nuevo.
+              {error}
             </Alert>
           )}
 
@@ -112,7 +126,7 @@ export default function Login() {
             autoComplete="username"
             value={usuario}
             onChange={(e) => setUsuario(e.target.value)}
-            error={error && !usuario.trim()}
+            error={Boolean(error && !usuario.trim())}
           />
           <Campo
             label="Contraseña"
@@ -122,7 +136,7 @@ export default function Login() {
             autoComplete="current-password"
             value={contrasena}
             onChange={(e) => setContrasena(e.target.value)}
-            error={error && !contrasena.trim()}
+            error={Boolean(error && !contrasena)}
           />
 
           <FormControlLabel
@@ -131,7 +145,7 @@ export default function Login() {
             sx={{ mt: 0.25, mb: 2.5, '& .MuiFormControlLabel-label': { fontSize: 12, color: 'text.secondary' } }}
           />
 
-          <Button type="submit" variant="contained" fullWidth sx={{ height: 45 }}>
+          <Button type="submit" variant="contained" fullWidth disabled={enviando} sx={{ height: 45 }}>
             Ingresar
           </Button>
         </Box>
