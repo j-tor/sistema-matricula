@@ -4,9 +4,16 @@ import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { AniosLectivosModule } from "./modules/anios-lectivos/anios-lectivos.module";
 import { CursosModule } from "./modules/cursos/cursos.module";
+import { AutenticacionModule } from "./modules/autenticacion/autenticacion.module";
 
 @Module({
-  imports: [DatabaseModule, HealthModule, AniosLectivosModule, CursosModule],
+  imports: [
+    DatabaseModule,
+    HealthModule,
+    AniosLectivosModule,
+    CursosModule,
+    AutenticacionModule,
+  ],
   controllers: [AppController],
 })
 export class AppModule {}
