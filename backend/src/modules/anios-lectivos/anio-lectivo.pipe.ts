@@ -1,9 +1,12 @@
 import { BadRequestException, Injectable, PipeTransform } from "@nestjs/common";
-import { validarAnioLectivo } from "./anio-lectivo.regla";
+import { PrismaService } from "../../database/prisma.service";
+import { obtenerAnioActual, validarAnioLectivo } from "./anio-lectivo.regla";
 
 @Injectable()
-export class AnioLectivoPipe implements PipeTransform<unknown, number> {
-  transform(valor: unknown): number {
+export class AnioLectivoPipe implements PipeTransform<unknown, Promise<number>> {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async transform(valor: unknown): Promise<number> {
     const anio =
       typeof valor === "string" && valor.trim() !== "" ? Number(valor) : valor;
 
@@ -17,6 +20,6 @@ export class AnioLectivoPipe implements PipeTransform<unknown, number> {
       );
     }
 
-    return validarAnioLectivo(anio);
+    return validarAnioLectivo(anio, await obtenerAnioActual(this.prisma));
   }
 }

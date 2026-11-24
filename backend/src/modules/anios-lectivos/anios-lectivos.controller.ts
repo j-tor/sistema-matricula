@@ -17,9 +17,9 @@ export class AniosLectivosController {
 
   @Get("actual")
   @ApiOperation({ summary: "Obtener el año lectivo actual" })
-  obtenerActual() {
+  async obtenerActual() {
     return {
-      anioActual: this.aniosLectivos.obtenerAnioActual(),
+      anioActual: await this.aniosLectivos.obtenerAnioActual(),
     };
   }
 

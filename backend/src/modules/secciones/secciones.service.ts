@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { NivelEducativo, Prisma } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
-import { validarAnioLectivo } from "../anios-lectivos/anio-lectivo.regla";
+import { obtenerAnioActual, validarAnioLectivo } from "../anios-lectivos/anio-lectivo.regla";
 
 @Injectable()
 export class SeccionesService {
@@ -20,6 +20,7 @@ export class SeccionesService {
 
   async crear(body: unknown, idUsuario: number) {
     const datos = this.validarDatos(body);
+    validarAnioLectivo(datos.anio, await obtenerAnioActual(this.prisma));
 
     try {
       return await this.prisma.conAuditoria(idUsuario, async (tx) => {
@@ -94,7 +95,7 @@ export class SeccionesService {
 
     return {
       idCurso: this.enteroPositivo(datos.idCurso, "idCurso", 2147483647),
-      anio: validarAnioLectivo(this.enteroPositivo(datos.anio, "anio", 32767)),
+      anio: this.enteroPositivo(datos.anio, "anio", 32767),
       numero: this.enteroPositivo(datos.numero, "numero", 32767),
       idBachillerato: datos.idBachillerato == null
         ? null

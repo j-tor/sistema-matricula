@@ -77,7 +77,7 @@ Agrega las nuevas funciones como módulos NestJS con controladores y servicios. 
 
 ## Regla: no se permiten años lectivos futuros
 
-El sistema solo acepta el año actual o los anteriores. El año actual se calcula con la **fecha del servidor** en la zona horaria `America/Tegucigalpa` (variable `ZONA_HORARIA`); no hay ningún año escrito en el código. La regla se aplica en dos niveles, por lo que no se puede evitar modificando la página:
+El sistema solo acepta el año actual o los anteriores. El año actual se calcula con la **fecha de PostgreSQL** en la zona horaria `America/Tegucigalpa`; no hay ningún año escrito en el código. La regla se aplica en dos niveles, por lo que no se puede evitar modificando la página:
 
 1. **Backend:** `src/modules/anios-lectivos/` valida el año antes de guardar y responde `400` con «No se permiten años lectivos futuros».
 2. **Base de datos:** un trigger en `seccion` y `matricula` rechaza cualquier `INSERT` o `UPDATE` con un año futuro, aunque no pase por el backend. El filtro `AnioFuturoFilter` convierte ese rechazo en el mismo error `400`.
@@ -89,7 +89,7 @@ Para usar la regla en un nuevo endpoint:
 @Get(':anio') listar(@Param('anio', AnioLectivoPipe) anio: number) { ... }
 
 // Dentro de un servicio (inyectando AniosLectivosService)
-this.aniosLectivos.validarAnio(dto.anio);
+await this.aniosLectivos.validarAnio(dto.anio);
 ```
 
 El frontend debe pedir el año actual a `GET /api/anios-lectivos/actual` en lugar de usar el reloj del navegador.
@@ -97,3 +97,11 @@ El frontend debe pedir el año actual a `GET /api/anios-lectivos/actual` en luga
 Referencia: [documentación de NestJS 11](https://docs.nestjs.com/v11/first-steps).
 
 Consulta la [guía de flujo de trabajo](docs/flujo-de-trabajo.md).
+
+## Reloj en producción
+
+Sincroniza por NTP el reloj del host de PostgreSQL. Con Docker Compose, es el
+host que ejecuta PostgreSQL. En Linux con chrony, verifica antes del despliegue
+que `chronyc tracking` indique `Leap status: Normal` y que `chronyc sources -v`
+muestre una fuente seleccionada (`^*`). En EC2 sigue la
+[guía de Amazon Time Sync](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configure-ec2-ntp.html).
