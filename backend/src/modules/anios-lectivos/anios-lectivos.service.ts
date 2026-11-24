@@ -12,12 +12,12 @@ import { obtenerAnioActual, validarAnioLectivo } from "./anio-lectivo.regla";
 export class AniosLectivosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  obtenerAnioActual(): number {
-    return obtenerAnioActual();
+  obtenerAnioActual(): Promise<number> {
+    return obtenerAnioActual(this.prisma);
   }
 
-  validarAnio(anio: number): number {
-    return validarAnioLectivo(anio);
+  async validarAnio(anio: number): Promise<number> {
+    return validarAnioLectivo(anio, await this.obtenerAnioActual());
   }
 
   async listar() {
@@ -42,7 +42,7 @@ export class AniosLectivosService {
     const datos = this.validarObjeto(body);
     this.validarCampos(datos, ["anio", "activo"]);
 
-    const anio = this.validarAnioEntrada(datos.anio);
+    const anio = await this.validarAnioEntrada(datos.anio);
     const activo = datos.activo ?? true;
 
     if (typeof activo !== "boolean") {
@@ -74,7 +74,7 @@ export class AniosLectivosService {
     const nuevoAnio =
       datos.anio === undefined
         ? anioActual
-        : this.validarAnioEntrada(datos.anio);
+        : await this.validarAnioEntrada(datos.anio);
 
     const activo = datos.activo;
 
@@ -154,7 +154,7 @@ export class AniosLectivosService {
     }));
   }
 
-  private validarAnioEntrada(valor: unknown): number {
+  private async validarAnioEntrada(valor: unknown): Promise<number> {
     if (
       typeof valor !== "number" ||
       !Number.isInteger(valor) ||
